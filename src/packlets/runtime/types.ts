@@ -21,3 +21,11 @@ export interface FrameResult {
   canvases: Map<string, Graphics>
   controls: ControlDef[]
 }
+
+export interface ResourceContext {
+  requestRerender: () => void
+}
+
+export interface Disposable {
+  [Symbol.dispose](): void
+}

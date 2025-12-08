@@ -1,6 +1,9 @@
-import { createGraphics, group, slider, textBox } from '../packlets/runtime'
+import { createGraphics, group, slider, textBox, image } from '../packlets/runtime'
+import reactLogo from '../assets/react.svg'
 
 export function render() {
+  // Load an image
+  const img = image('react', reactLogo)
   // A simple label
   group('label', () => {
     const text = textBox('text', 'Hello World')
@@ -60,5 +63,23 @@ export function render() {
 
     ctx.drawImage(onlineBadge, 16, 16)
     ctx.drawImage(offlineBadge, 16, 48)
+  })
+
+  // Draw the loaded image
+  group('image-viewer', () => {
+    const g = createGraphics('out', 120, 120)
+    const { ctx } = g
+
+    ctx.fillStyle = '#1a1a2e'
+    ctx.fillRect(0, 0, 120, 120)
+
+    if (img.loaded) {
+      ctx.drawImage(img.image, 10, 10, 100, 100)
+    } else {
+      ctx.fillStyle = '#888'
+      ctx.font = '12px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('Loading...', 60, 60)
+    }
   })
 }

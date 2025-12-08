@@ -1,4 +1,4 @@
-import type { Graphics, ControlDef } from './types'
+import type { Graphics, ControlDef, ResourceContext } from './types'
 import { RuntimeController } from './controller'
 
 // Global runtime instance
@@ -38,4 +38,8 @@ export function setValue(key: string, value: unknown) {
 
 export function getCurrentKey(name: string): string {
   return getRuntime().getCurrentKey(name)
+}
+
+export function resource<T>(name: string, factory: (context: ResourceContext) => T): T {
+  return getRuntime().resource(name, factory)
 }

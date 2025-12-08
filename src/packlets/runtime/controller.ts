@@ -1,5 +1,5 @@
 import { atom } from 'nanostores'
-import type { Graphics, ControlDef, FrameResult } from './types'
+import type { Graphics, ControlDef, FrameResult, ResourceContext } from './types'
 
 export class RuntimeController {
   $frame = atom<FrameResult>({ canvases: new Map(), controls: [] })
@@ -9,6 +9,7 @@ export class RuntimeController {
   private controls: ControlDef[] = []
   private prefixStack: string[] = []
   private renderFn: (() => void) | null = null
+  private resources = new Map<string, unknown>()
 
   setRenderFn(fn: () => void) {
     this.renderFn = fn
@@ -66,6 +67,28 @@ export class RuntimeController {
 
   registerControl(control: ControlDef) {
     this.controls.push(control)
+  }
+
+  resource<T>(name: string, factory: (context: ResourceContext) => T): T {
+    const key = this.getCurrentKey(name)
+
+    if (!this.resources.has(key)) {
+      const context: ResourceContext = {
+        requestRerender: () => this.runFrame(),
+      }
+      this.resources.set(key, factory(context))
+    }
+
+    return this.resources.get(key) as T
+  }
+
+  clearResources() {
+    for (const resource of this.resources.values()) {
+      if (resource && typeof resource === 'object' && Symbol.dispose in resource) {
+        ;(resource as { [Symbol.dispose]: () => void })[Symbol.dispose]()
+      }
+    }
+    this.resources.clear()
   }
 
   private runFrame() {
