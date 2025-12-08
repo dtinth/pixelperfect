@@ -8,6 +8,8 @@ A reactive system for generating pixel-perfect graphics using HTML Canvas 2D, wi
 - **Reactive controls**: IMGUI-style controls (sliders, text boxes) that render UI and return values
 - **Grouping**: Namespace controls and canvases for reusable components
 - **Auto-gallery**: All created canvases displayed automatically
+- **Scenes**: Multiple render functions defined in `src/scenes/*.ts`, switchable via URL params
+- **Packlets**: Enforced module boundaries with `@rushstack/eslint-plugin-packlets`
 
 ## API
 
@@ -25,7 +27,7 @@ interface Graphics {
 - Same name = same canvas instance across frames
 - Canvas is cleared at start of each frame
 - If size changes, canvas is resized (and cleared)
-- Name is prefixed with current group stack (e.g., `label.canvas`)
+- Name is prefixed with current group stack (e.g., `label.out`)
 
 ### `group<T>(name: string, fn: () => T): T`
 
@@ -34,7 +36,7 @@ Groups controls and canvases under a namespace.
 ```typescript
 const result = group('label', () => {
   const size = slider('size', 24)  // key becomes 'label.size'
-  const g = createGraphics('out', 100, 50)  // key becomes 'label.out'
+  const g = createGraphics('out', 100, 50)  // name becomes 'label.out'
   return g.canvas
 })
 ```
@@ -61,57 +63,81 @@ interface SliderOpts {
 
 - Renders a text input in the control panel
 - Returns current value
+- Key is prefixed with group stack
 
 ## Architecture
 
 ```
 src/
-├── lib/
-│   ├── runtime.tsx     # createGraphics, group, render loop, context
-│   ├── controls.tsx    # slider, textBox implementations
-│   └── types.ts        # shared types
-├── render.ts           # user's render function
-├── App.tsx             # main app with gallery + controls
-└── main.tsx            # entry point
+├── packlets/
+│   └── runtime/           # Packlet boundary
+│       ├── index.ts       # Public exports only
+│       ├── controller.ts  # RuntimeController class
+│       ├── api.ts         # createGraphics, group, setValue, etc.
+│       ├── controls.ts    # slider, textBox implementations
+│       ├── react.tsx      # RuntimeProvider component
+│       ├── hooks.ts       # useFrameResult hook
+│       └── types.ts       # Core interfaces
+├── scenes/                # User-defined scenes
+│   ├── index.ts           # Scene loader with glob imports
+│   └── example.ts         # Example scene (render function)
+├── App.tsx                # Main app with gallery + controls + scene selector
+└── main.tsx               # Entry point
 ```
 
 ## Implementation Details
 
-### Runtime Context
+### RuntimeController
 
-Use React context to provide runtime state to controls:
+Core imperative runtime logic (not React):
 
 ```typescript
-interface RuntimeState {
-  // Canvas registry: key -> { canvas, ctx }
-  canvases: Map<string, Graphics>
+class RuntimeController {
+  $frame = atom<FrameResult>()  // Published to React via nanostores
 
-  // Control values: key -> current value
-  values: Map<string, unknown>
-
-  // Controls to render: collected during render pass
-  controls: ControlDef[]
-
-  // Current group prefix stack
-  prefixStack: string[]
+  setValue(key, value)          // Update control value
+  getValue(key, default)        // Read control value
+  createGraphics(name, w, h)    // Create/reuse canvas
+  group(name, fn)               // Push/pop namespace
+  registerControl(control)      // Collect control definition
+  setRenderFn(fn)               // Set user's render function
 }
 ```
 
+**Key insight**: Controller runs imperatively during `setValue()` calls, triggering `runFrame()` which:
+1. Clears controls and canvases
+2. Calls user's render function
+3. Publishes frame result to React via nanostores
+
 ### Render Loop
 
-1. User calls `render()` function
-2. `render()` calls `createGraphics`, `slider`, `textBox`, etc.
-3. These register canvases and controls in runtime state
-4. After render, React displays:
-   - All canvases in a gallery grid
-   - All controls in a panel (grouped by prefix)
-5. When control value changes, trigger re-render
+User defines scenes in `src/scenes/*.ts`:
+
+```typescript
+// src/scenes/example.ts
+export function render() {
+  group('label', () => {
+    const text = textBox('text', 'Hello World')
+    const g = createGraphics('out', 300, 60)
+    // ... drawing code
+  })
+}
+```
+
+Runtime flow:
+1. App loads scene from URL param `?scene=name` (defaults to `example`)
+2. `RuntimeProvider` creates RuntimeController and sets render function
+3. User changes a control value
+4. `setValue()` triggers `controller.runFrame()`
+5. Frame result published to nanostores
+6. React re-renders to display updated canvases/controls
 
 ### Control Panel UI
 
+- Scene selector dropdown at top
 - Controls grouped by their prefix (collapsible sections)
-- Format: `[group name]` as section header, then controls within
 - Each control shows its short name (without prefix)
+- Input changes trigger `setValue()` which updates render
 
 ### Gallery UI
 
@@ -119,13 +145,27 @@ interface RuntimeState {
 - Show canvas name above each
 - Click to download as PNG (filename = canvas name + .png)
 
-## Example render.ts
+### Scene Loading
+
+Vite's `import.meta.glob()` discovers all `src/scenes/*.ts` files at build time:
 
 ```typescript
-import { createGraphics, group, slider, textBox } from './lib/runtime'
+// src/scenes/index.ts
+const scenes = import.meta.glob<{ render: () => void }>('./*.ts', { eager: true })
+
+export function getScene(name: string) {
+  // Extract scene name from path and return render function
+}
+```
+
+Adding a new scene is as simple as creating `src/scenes/myScene.ts` with a `render()` export.
+
+## Example Scene
+
+```typescript
+import { createGraphics, group, slider, textBox } from '../packlets/runtime'
 
 export function render() {
-  // A simple label
   group('label', () => {
     const text = textBox('text', 'Hello World')
     const fontSize = slider('fontSize', 24, { min: 12, max: 48 })
@@ -135,18 +175,16 @@ export function render() {
     const g = createGraphics('out', 300, 60)
     const { ctx } = g
 
-    // Background
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, 300, 60)
 
-    // Text
     ctx.fillStyle = fg
     ctx.font = `${fontSize}px monospace`
     ctx.textBaseline = 'middle'
     ctx.fillText(text, 16, 30)
   })
 
-  // A reusable badge component
+  // Reusable component
   function badge(name: string, defaults: { text: string; color: string }) {
     return group(name, () => {
       const text = textBox('text', defaults.text)
@@ -170,11 +208,9 @@ export function render() {
     })
   }
 
-  // Multiple badges
   const onlineBadge = badge('badge-online', { text: 'Online', color: '#22c55e' })
   const offlineBadge = badge('badge-offline', { text: 'Offline', color: '#ef4444' })
 
-  // Composed graphic
   group('status-bar', () => {
     const g = createGraphics('out', 200, 80)
     const { ctx } = g
@@ -188,17 +224,56 @@ export function render() {
 }
 ```
 
-## Implementation Order
+## Key Design Patterns
 
-1. **types.ts** - Define interfaces (Graphics, RuntimeState, ControlDef, SliderOpts)
-2. **runtime.tsx** - Implement RuntimeContext, createGraphics, group, and the provider
-3. **controls.tsx** - Implement slider, textBox using the runtime context
-4. **App.tsx** - Gallery grid + control panel UI
-5. **render.ts** - Example graphics to test the system
+### Packlets Module Boundary
+
+The `src/packlets/runtime/` packlet enforces clean API:
+
+```typescript
+// ✅ Allowed: import from packlet entry point
+import { createGraphics, group, slider } from '../packlets/runtime'
+
+// ❌ Error: internal file import (ESLint packlets rule)
+import { RuntimeController } from '../packlets/runtime/controller'
+```
+
+### Imperative Runtime, Reactive UI
+
+The controller manages graphics rendering imperatively (outside React):
+- Not tied to React's render cycle
+- `setValue()` directly triggers frame updates
+- nanostores atom syncs results to React for display
+- Clean separation: controller is pure logic, React is just display
+
+### Scene Composition
+
+Scenes can be simple or complex:
+
+```typescript
+// Simple: just controls and graphics
+export function render() {
+  const val = slider('x', 0, { min: 0, max: 100 })
+  // ... use val
+}
+
+// Complex: reusable components, composition
+export function render() {
+  const canvas1 = myComponent('comp1', { ... })
+  const canvas2 = myComponent('comp2', { ... })
+
+  group('combined', () => {
+    const g = createGraphics('out', 400, 200)
+    g.ctx.drawImage(canvas1, 0, 0)
+    g.ctx.drawImage(canvas2, 200, 0)
+  })
+}
+```
 
 ## Notes
 
 - Keep it simple. Raw `ctx` access, no wrapper methods.
 - Canvas clears each frame - stateless, predictable.
-- Control values persist until page refresh (useState in runtime).
-- No fancy state management - React useState + context is enough.
+- Control values persist via nanostores Map (survives page reloads within session).
+- No fancy state management - nanostores atoms are minimal and explicit.
+- ESLint packlets enforcement prevents internal APIs from leaking.
