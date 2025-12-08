@@ -1,4 +1,4 @@
-import { createGraphics, group, slider, textBox } from './packlets/runtime'
+import { createGraphics, group, slider, textBox } from '../packlets/runtime'
 
 export function render() {
   // A simple label

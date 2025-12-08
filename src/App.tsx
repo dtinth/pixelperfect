@@ -1,18 +1,30 @@
 import { useState } from 'react'
 import { RuntimeProvider, useFrameResult, setValue, type ControlDef, type Graphics } from './packlets/runtime'
-import { render } from './render'
+import { getScenes, getScene } from './scenes'
 import './App.css'
 
 function App() {
+  const params = new URLSearchParams(window.location.search)
+  const sceneName = params.get('scene') || 'example'
+  const renderFn = getScene(sceneName)
+
+  if (!renderFn) {
+    return <div style={{ padding: '20px' }}>Scene "{sceneName}" not found</div>
+  }
+
   return (
-    <RuntimeProvider onRender={render}>
-      <AppContent />
+    <RuntimeProvider onRender={renderFn}>
+      <AppContent sceneNames={Object.keys(getScenes())} selectedScene={sceneName} />
     </RuntimeProvider>
   )
 }
 
-function AppContent() {
+function AppContent({ sceneNames, selectedScene }: { sceneNames: string[]; selectedScene: string }) {
   const frame = useFrameResult()
+
+  const handleSceneChange = (sceneName: string) => {
+    window.location.search = `?scene=${sceneName}`
+  }
 
   // Group controls by prefix
   const groupedControls = new Map<string, ControlDef[]>()
@@ -30,7 +42,26 @@ function AppContent() {
     <div style={{ display: 'flex', minHeight: '100vh', gap: '20px', padding: '20px' }}>
       {/* Control Panel */}
       <div style={{ width: '300px', flexShrink: 0 }}>
-        <h2>Controls</h2>
+        <h2>PixelPerfect</h2>
+        <div style={{ marginBottom: '16px', border: '1px solid #333', padding: '8px', borderRadius: '4px' }}>
+          <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: 'bold' }}>
+            Scene
+          </label>
+          <select
+            value={selectedScene}
+            onChange={(e) => handleSceneChange(e.target.value)}
+            style={{ width: '100%', padding: '4px', background: '#1a1a1a', border: '1px solid #333', color: '#fff' }}
+          >
+            {sceneNames
+              .sort()
+              .map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+          </select>
+        </div>
+        <h3>Controls</h3>
         {Array.from(groupedControls.entries()).map(([groupKey, controls]) => (
           <ControlGroup key={groupKey} groupKey={groupKey} controls={controls} />
         ))}
