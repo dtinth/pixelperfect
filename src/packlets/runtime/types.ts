@@ -17,9 +17,7 @@ export interface ControlDef {
   opts?: SliderOpts
 }
 
-export interface RuntimeState {
+export interface FrameResult {
   canvases: Map<string, Graphics>
-  values: Map<string, unknown>
   controls: ControlDef[]
-  prefixStack: string[]
 }

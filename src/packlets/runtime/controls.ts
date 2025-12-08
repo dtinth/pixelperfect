@@ -1,5 +1,5 @@
 import type { SliderOpts } from './types'
-import { registerControl, getValue, getCurrentKey } from './runtime'
+import { registerControl, getValue, getCurrentKey } from './api'
 
 export function slider(name: string, defaultValue: number, opts?: SliderOpts): number {
   const key = getCurrentKey(name)

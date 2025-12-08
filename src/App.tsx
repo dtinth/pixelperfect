@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RuntimeProvider, useFrameResult, setValue } from './lib/runtime'
+import { RuntimeProvider, useFrameResult, setValue, type ControlDef, type Graphics } from './packlets/runtime'
 import { render } from './render'
 import './App.css'
 
@@ -15,9 +15,9 @@ function AppContent() {
   const frame = useFrameResult()
 
   // Group controls by prefix
-  const groupedControls = new Map<string, typeof frame.controls>()
+  const groupedControls = new Map<string, ControlDef[]>()
 
-  frame.controls.forEach(control => {
+  frame.controls.forEach((control) => {
     const parts = control.key.split('.')
     const groupKey = parts.length > 1 ? parts.slice(0, -1).join('.') : ''
     if (!groupedControls.has(groupKey)) {
@@ -40,7 +40,7 @@ function AppContent() {
       <div style={{ flex: 1 }}>
         <h2>Gallery</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-          {Array.from(frame.canvases.entries()).map(([key, graphics]) => (
+          {Array.from(frame.canvases.entries()).map(([key, graphics]: [string, Graphics]) => (
             <CanvasCard key={key} name={key} graphics={graphics} />
           ))}
         </div>
@@ -49,7 +49,7 @@ function AppContent() {
   )
 }
 
-function ControlGroup({ groupKey, controls }: { groupKey: string; controls: any[] }) {
+function ControlGroup({ groupKey, controls }: { groupKey: string; controls: ControlDef[] }) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
@@ -73,7 +73,7 @@ function ControlGroup({ groupKey, controls }: { groupKey: string; controls: any[
   )
 }
 
-function Control({ control }: { control: any }) {
+function Control({ control }: { control: ControlDef }) {
   if (control.type === 'slider') {
     return (
       <div>
@@ -115,7 +115,7 @@ function Control({ control }: { control: any }) {
   return null
 }
 
-function CanvasCard({ name, graphics }: { name: string; graphics: any }) {
+function CanvasCard({ name, graphics }: { name: string; graphics: Graphics }) {
   const handleDownload = () => {
     const link = document.createElement('a')
     link.download = `${name}.png`

@@ -1,14 +1,7 @@
 import { atom } from 'nanostores'
-import { useStore } from '@nanostores/react'
-import { useState } from 'react'
-import type { Graphics, ControlDef } from './types'
+import type { Graphics, ControlDef, FrameResult } from './types'
 
-interface FrameResult {
-  canvases: Map<string, Graphics>
-  controls: ControlDef[]
-}
-
-class RuntimeController {
+export class RuntimeController {
   $frame = atom<FrameResult>({ canvases: new Map(), controls: [] })
 
   private values = new Map<string, unknown>()
@@ -95,56 +88,4 @@ class RuntimeController {
       controls: [...this.controls],
     })
   }
-}
-
-// Global runtime instance
-let currentRuntime: RuntimeController | null = null
-
-export function getRuntime(): RuntimeController {
-  if (!currentRuntime) {
-    throw new Error('Runtime not initialized')
-  }
-  return currentRuntime
-}
-
-// Public API
-export function createGraphics(name: string, width: number, height: number): Graphics {
-  return getRuntime().createGraphics(name, width, height)
-}
-
-export function group<T>(name: string, fn: () => T): T {
-  return getRuntime().group(name, fn)
-}
-
-export function registerControl(control: ControlDef) {
-  getRuntime().registerControl(control)
-}
-
-export function getValue<T>(key: string, defaultValue: T): T {
-  return getRuntime().getValue(key, defaultValue)
-}
-
-export function setValue(key: string, value: unknown) {
-  getRuntime().setValue(key, value)
-}
-
-export function getCurrentKey(name: string): string {
-  return getRuntime().getCurrentKey(name)
-}
-
-// React integration
-export function RuntimeProvider({ children, onRender }: { children: React.ReactNode, onRender: () => void }) {
-  useState(() => {
-    const c = new RuntimeController()
-    currentRuntime = c
-    c.setRenderFn(onRender)
-    return c
-  })
-
-  return <>{children}</>
-}
-
-export function useFrameResult() {
-  const runtime = getRuntime()
-  return useStore(runtime.$frame)
 }
