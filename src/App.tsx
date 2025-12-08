@@ -1,34 +1,141 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { RuntimeProvider, useFrameResult, setValue } from './lib/runtime'
+import { render } from './render'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  return (
+    <RuntimeProvider onRender={render}>
+      <AppContent />
+    </RuntimeProvider>
+  )
+}
+
+function AppContent() {
+  const frame = useFrameResult()
+
+  // Group controls by prefix
+  const groupedControls = new Map<string, typeof frame.controls>()
+
+  frame.controls.forEach(control => {
+    const parts = control.key.split('.')
+    const groupKey = parts.length > 1 ? parts.slice(0, -1).join('.') : ''
+    if (!groupedControls.has(groupKey)) {
+      groupedControls.set(groupKey, [])
+    }
+    groupedControls.get(groupKey)!.push(control)
+  })
 
   return (
-    <>
+    <div style={{ display: 'flex', minHeight: '100vh', gap: '20px', padding: '20px' }}>
+      {/* Control Panel */}
+      <div style={{ width: '300px', flexShrink: 0 }}>
+        <h2>Controls</h2>
+        {Array.from(groupedControls.entries()).map(([groupKey, controls]) => (
+          <ControlGroup key={groupKey} groupKey={groupKey} controls={controls} />
+        ))}
+      </div>
+
+      {/* Gallery */}
+      <div style={{ flex: 1 }}>
+        <h2>Gallery</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+          {Array.from(frame.canvases.entries()).map(([key, graphics]) => (
+            <CanvasCard key={key} name={key} graphics={graphics} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ControlGroup({ groupKey, controls }: { groupKey: string; controls: any[] }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  return (
+    <div style={{ marginBottom: '16px', border: '1px solid #333', padding: '8px', borderRadius: '4px' }}>
+      {groupKey && (
+        <div
+          style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '8px' }}
+          onClick={() => setCollapsed(!collapsed)}
+        >
+          {collapsed ? '▶' : '▼'} {groupKey}
+        </div>
+      )}
+      {!collapsed && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {controls.map(control => (
+            <Control key={control.key} control={control} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Control({ control }: { control: any }) {
+  if (control.type === 'slider') {
+    return (
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
+          {control.label}
+        </label>
+        <input
+          type="range"
+          min={control.opts?.min ?? 0}
+          max={control.opts?.max ?? 100}
+          step={control.opts?.step ?? 1}
+          defaultValue={control.defaultValue}
+          onChange={(e) => setValue(control.key, Number(e.target.value))}
+          style={{ width: '100%' }}
+        />
+        <div style={{ fontSize: '11px', color: '#888' }}>
+          {control.opts?.min ?? 0} - {control.opts?.max ?? 100}
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+    )
+  }
+
+  if (control.type === 'textbox') {
+    return (
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px' }}>
+          {control.label}
+        </label>
+        <input
+          type="text"
+          defaultValue={control.defaultValue}
+          onChange={(e) => setValue(control.key, e.target.value)}
+          style={{ width: '100%', padding: '4px', background: '#1a1a1a', border: '1px solid #333', color: '#fff' }}
+        />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    )
+  }
+
+  return null
+}
+
+function CanvasCard({ name, graphics }: { name: string; graphics: any }) {
+  const handleDownload = () => {
+    const link = document.createElement('a')
+    link.download = `${name}.png`
+    link.href = graphics.canvas.toDataURL()
+    link.click()
+  }
+
+  return (
+    <div style={{ border: '1px solid #333', padding: '12px', borderRadius: '4px' }}>
+      <div style={{ fontSize: '14px', marginBottom: '8px', fontWeight: 'bold' }}>{name}</div>
+      <canvas
+        ref={(el) => {
+          if (el && el !== graphics.canvas) {
+            el.replaceWith(graphics.canvas)
+          }
+        }}
+        style={{ display: 'block', maxWidth: '100%', cursor: 'pointer', border: '1px solid #555' }}
+        onClick={handleDownload}
+      />
+    </div>
   )
 }
 
