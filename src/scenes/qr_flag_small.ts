@@ -52,9 +52,7 @@ export function render() {
     const contactImage = px.image("contact", contactImageFile.url);
     if (contactImage.loaded) {
       ctx.drawImage(contactImage.image, flagSize, 0);
-    } else {
-      out.loading();
-    }
+    } else out.loading();
 
     // Owner name
     const ownerNameImageFile = fs.file("dtinth_small.png");
@@ -65,9 +63,7 @@ export function render() {
         canvas.width - 7 - ownerNameImage.image.width,
         canvas.height - 24 - ownerNameImage.image.height
       );
-    } else {
-      out.loading();
-    }
+    } else out.loading();
 
     // Asset ID
     if (id) {
@@ -76,7 +72,7 @@ export function render() {
         canvas.width - 3 - id.canvas.width,
         canvas.height - 3 - id.canvas.height
       );
-    }
+    } else out.loading();
 
     // Text
     const originX = canvas.width - flagSize + 5;
@@ -88,6 +84,6 @@ export function render() {
     );
     if (gfx) {
       ctx.drawImage(gfx.canvas, originX, 0);
-    }
+    } else out.loading();
   });
 }

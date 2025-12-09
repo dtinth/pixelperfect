@@ -46,9 +46,7 @@ Some operations are async (loading files, images, fonts). On first render, they 
 const img = px.image("logo", "https://example.com/logo.png");
 if (img.loaded) {
   ctx.drawImage(img.image, 0, 0);
-} else {
-  g.loading();
-}
+} else g.loading();
 ```
 
 ## API Reference
