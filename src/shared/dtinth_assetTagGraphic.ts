@@ -1,11 +1,11 @@
 import {
   createGraphics,
   image,
-  type FileSystemResource,
+  type FileSystemResourceApi,
 } from "../packlets/runtime";
 
 export function assetTagGraphic(
-  fs: FileSystemResource,
+  fs: FileSystemResourceApi,
   name: string,
   assetId: string
 ) {

@@ -1,5 +1,5 @@
 import * as px from "../packlets/runtime";
-import { assetTagGraphic } from "../shared/assetTagGraphic";
+import { assetTagGraphic } from "../shared/dtinth_assetTagGraphic";
 
 function assetUrl(assetId: string, assetKey: string) {
   if (assetId === "EXAMPLE") {

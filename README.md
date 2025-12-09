@@ -16,6 +16,8 @@ It provides:
 
 See [`src/scenes/example.ts`](src/scenes/example.ts) for an example. [Preview it live](https://pixel-perfect.pages.dev/).
 
+<em>(Note: Most scenes starting with `dtinth_` will not render correctly as they rely on proprietary assets.)</em>
+
 ## Creating a Scene
 
 Each scene is a TypeScript file in `src/scenes/` that exports a `render()` function:
