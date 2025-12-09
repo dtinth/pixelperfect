@@ -1,29 +1,18 @@
 import reactLogo from "../assets/react.svg?url";
-import {
-  button,
-  createGraphics,
-  group,
-  image,
-  requestRerender,
-  resource,
-  showError,
-  showInfo,
-  slider,
-  textBox,
-} from "../packlets/runtime";
+import * as px from "../packlets/runtime";
 
 export function render() {
   // Load an image
-  const img = image("react", reactLogo);
+  const img = px.image("react", reactLogo);
 
   // A simple label
-  group("label", () => {
-    const text = textBox("text", "Hello World");
-    const fontSize = slider("fontSize", 24, { min: 12, max: 48 });
-    const bg = textBox("bg", "#1a1a2e");
-    const fg = textBox("fg", "#eef");
+  px.group("label", () => {
+    const text = px.textBox("text", "Hello World");
+    const fontSize = px.slider("fontSize", 24, { min: 12, max: 48 });
+    const bg = px.textBox("bg", "#1a1a2e");
+    const fg = px.textBox("fg", "#eef");
 
-    const g = createGraphics("out", 300, 60);
+    const g = px.createGraphics("out", 300, 60);
     const { ctx } = g;
 
     // Background
@@ -39,11 +28,11 @@ export function render() {
 
   // A reusable badge component
   function badge(name: string, defaults: { text: string; color: string }) {
-    return group(name, () => {
-      const text = textBox("text", defaults.text);
-      const color = textBox("color", defaults.color);
+    return px.group(name, () => {
+      const text = px.textBox("text", defaults.text);
+      const color = px.textBox("color", defaults.color);
 
-      const g = createGraphics("out", 80, 28);
+      const g = px.createGraphics("out", 80, 28);
       const { ctx } = g;
 
       ctx.fillStyle = color;
@@ -72,8 +61,8 @@ export function render() {
   });
 
   // Composed graphic
-  group("status-bar", () => {
-    const g = createGraphics("out", 200, 80);
+  px.group("status-bar", () => {
+    const g = px.createGraphics("out", 200, 80);
     const { ctx } = g;
 
     ctx.fillStyle = "#333";
@@ -84,8 +73,8 @@ export function render() {
   });
 
   // Draw the loaded image
-  group("image-viewer", () => {
-    const g = createGraphics("out", 120, 120);
+  px.group("image-viewer", () => {
+    const g = px.createGraphics("out", 120, 120);
     const { ctx } = g;
 
     ctx.fillStyle = "#1a1a2e";
@@ -102,32 +91,32 @@ export function render() {
   });
 
   // Test button and messages
-  group("demo", () => {
-    const action = resource("action", () => {
+  px.group("demo", () => {
+    const action = px.resource("action", () => {
       return {
         fn: () => {},
       };
     });
 
-    button("testBtn", "Click me!", () => {
+    px.button("testBtn", "Click me!", () => {
       action.fn = () => {
-        showInfo("Action performed!");
+        px.showInfo("Action performed!");
       };
-      requestRerender();
+      px.requestRerender();
     });
 
-    button("errorBtn", "Show error", () => {
+    px.button("errorBtn", "Show error", () => {
       action.fn = () => {
-        showError("This is an error message.");
+        px.showError("This is an error message.");
       };
-      requestRerender();
+      px.requestRerender();
     });
 
     action.fn();
 
-    const count = slider("count", 0, { min: 0, max: 10 });
+    const count = px.slider("count", 0, { min: 0, max: 10 });
     if (count > 5) {
-      showInfo(`Count is high: ${count}`);
+      px.showInfo(`Count is high: ${count}`);
     }
   });
 }

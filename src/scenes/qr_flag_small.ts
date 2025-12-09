@@ -1,14 +1,4 @@
-import {
-  createGraphics,
-  fileSystem,
-  freeTypeRenderer,
-  group,
-  image,
-  params,
-  qrGraphics,
-  slider,
-  textBox,
-} from "../packlets/runtime";
+import * as px from "../packlets/runtime";
 import { assetTagGraphic } from "../shared/assetTagGraphic";
 
 function assetUrl(assetId: string, assetKey: string) {
@@ -19,19 +9,19 @@ function assetUrl(assetId: string, assetKey: string) {
 }
 
 export function render() {
-  const fs = fileSystem("labeling");
+  const fs = px.fileSystem("labeling");
   const arimoFont = fs.file("Arimo-Bold.ttf");
-  const arimo = freeTypeRenderer(arimoFont.data);
+  const arimo = px.freeTypeRenderer(arimoFont.data);
 
   // A simple label
-  group("tag", () => {
-    const assetId = textBox("id", params["assetId"] || "EXAMPLE");
-    const assetKey = textBox("key", params["assetKey"] || "dummy");
-    const text = textBox(
+  px.group("tag", () => {
+    const assetId = px.textBox("id", px.params["assetId"] || "EXAMPLE");
+    const assetKey = px.textBox("key", px.params["assetKey"] || "dummy");
+    const text = px.textBox(
       "text",
-      params["text"] || "Scan QR||to contact||owner"
+      px.params["text"] || "Scan QR||to contact||owner"
     );
-    const diameter = slider("diameter", +params["diameter"] || 5, {
+    const diameter = px.slider("diameter", +px.params["diameter"] || 5, {
       min: 1,
       max: 20,
     });
@@ -40,7 +30,7 @@ export function render() {
     const wrapAroundCable = Math.round(
       pixelsPerMillimeter * +diameter * Math.PI
     );
-    const out = createGraphics(
+    const out = px.createGraphics(
       "out",
       flagSize + wrapAroundCable + flagSize,
       flagSize
@@ -52,14 +42,14 @@ export function render() {
 
     // QR code
     const url = assetUrl(assetId, assetKey);
-    const qr = qrGraphics(url, { scale: 3, invert: false });
+    const qr = px.qrGraphics(url, { scale: 3, invert: false });
     const id = assetTagGraphic(fs, "id", assetId);
     const xb = Math.floor(canvas.height / 2 - qr.canvas.height / 2);
     ctx.drawImage(qr.canvas, 3, xb);
 
     // Contact owner image
     const contactImageFile = fs.file("contact_owner_vertical.png");
-    const contactImage = image("contact", contactImageFile.url);
+    const contactImage = px.image("contact", contactImageFile.url);
     if (contactImage.loaded) {
       ctx.drawImage(contactImage.image, flagSize, 0);
     } else {
@@ -68,7 +58,7 @@ export function render() {
 
     // Owner name
     const ownerNameImageFile = fs.file("dtinth_small.png");
-    const ownerNameImage = image("ownerName", ownerNameImageFile.url);
+    const ownerNameImage = px.image("ownerName", ownerNameImageFile.url);
     if (ownerNameImage.loaded) {
       ctx.drawImage(
         ownerNameImage.image,

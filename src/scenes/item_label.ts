@@ -1,22 +1,16 @@
-import {
-  createGraphics,
-  fileSystem,
-  freeTypeRenderer,
-  group,
-  textBox,
-} from "../packlets/runtime";
+import * as px from "../packlets/runtime";
 
 export function render() {
-  const fs = fileSystem("labeling");
+  const fs = px.fileSystem("labeling");
   const virtueFont = fs.file("virtue.ttf");
-  const virtue = freeTypeRenderer(virtueFont.data);
+  const virtue = px.freeTypeRenderer(virtueFont.data);
   const arimoFont = fs.file("Arimo-Bold.ttf");
-  const arimo = freeTypeRenderer(arimoFont.data);
+  const arimo = px.freeTypeRenderer(arimoFont.data);
 
   // A simple label
-  group("label", () => {
-    const title = textBox("title", "Wi-Fi Repeater");
-    const description = textBox("description", "TP-LINK TL-WA1201");
+  px.group("label", () => {
+    const title = px.textBox("title", "Wi-Fi Repeater");
+    const description = px.textBox("description", "TP-LINK TL-WA1201");
 
     const titleGraphics = virtue.textGraphics("title", 12, title);
     const descriptionGraphics = virtue.textGraphics(
@@ -27,7 +21,7 @@ export function render() {
 
     arimo.textGraphics("extra", 20, "Powered by PixelPerfect");
 
-    const g = createGraphics(
+    const g = px.createGraphics(
       "out",
       32 +
         Math.max(

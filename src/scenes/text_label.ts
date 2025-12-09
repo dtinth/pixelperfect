@@ -1,18 +1,18 @@
-import { createGraphics, resource, textBox } from "../packlets/runtime";
+import * as px from "../packlets/runtime";
 
 export function render() {
-  const measurer = createGraphics("measurer", 1, 1);
-  const text = textBox("text", "Supplies");
+  const measurer = px.createGraphics("measurer", 1, 1);
+  const text = px.textBox("text", "Supplies");
   const ctxFont = '64px "Berkeley Mono"';
   measurer.ctx.font = ctxFont;
   const textWidth = measurer.ctx.measureText(text).width;
 
-  const g = createGraphics("out", 72 + textWidth, 112);
+  const g = px.createGraphics("out", 72 + textWidth, 112);
   const { ctx, canvas } = g;
   ctx.font = ctxFont;
 
   // Generate a bunch of sha256 hash to use as random seed
-  const rng = resource("random", () => {
+  const rng = px.resource("random", () => {
     let _ready = false;
     const random: number[] = [];
     async function init() {
