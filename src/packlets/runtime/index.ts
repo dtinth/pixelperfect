@@ -9,13 +9,13 @@ export {
   requestRerender,
   resource,
   setValue,
+  weakResource,
 } from "./api";
 export { button, slider, textBox } from "./controls";
 export * from "./fileSystem";
 export * from "./freeTypeRenderer";
 export { useFrameResult } from "./hooks";
-export { image } from "./image";
-export type { ImageResource } from "./image";
+export * from "./image";
 export { showError, showInfo } from "./messages";
 export * from "./qr";
 export { RuntimeProvider } from "./react";

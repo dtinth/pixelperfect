@@ -3,19 +3,27 @@ import { requestRerender, resource } from "./api";
 import { button } from "./controls";
 import { showError, showInfo } from "./messages";
 
-export function fileSystem(key: string): FileSystemResource {
-  const fsResource = resource(`fs:${key}`, () => {
-    return new FileSystemResource(key);
-  });
+export function fileSystem(key: string): FileSystemResourceApi {
+  const fsResource = resource(`fs:${key}`, () => new FileSystemResource(key));
   fsResource.renderUi();
-  return fsResource;
+  return fsResource.api;
 }
 
 interface StoredState {
   handle: FileSystemDirectoryHandle;
 }
 
-export class FileSystemResource {
+export interface FileSystemResourceApi {
+  file(fileName: string): FileResourceApi;
+}
+
+export interface FileResourceApi {
+  readonly loaded: boolean;
+  readonly data: ArrayBuffer | null;
+  readonly url: string | null;
+}
+
+class FileSystemResource {
   private initialized = false;
   private handle?: FileSystemDirectoryHandle;
   private granted = false;
@@ -81,25 +89,28 @@ export class FileSystemResource {
       });
     }
   }
-  file(fileName: string): FileResource {
-    if (!this.handle || !this.granted) {
-      return new UnloadedFileResource();
-    }
-    const fileResource = resource(`fsfile:${this.key}:${fileName}`, () => {
-      return new FileSystemFileResource(this.handle!, fileName);
-    });
-    fileResource.renderUi();
-    return fileResource;
+  get api(): FileSystemResourceApi {
+    return {
+      file: (fileName: string): FileResourceApi => {
+        if (!this.handle || !this.granted) {
+          return {
+            data: null,
+            url: null,
+            loaded: false,
+          };
+        }
+        const fileResource = resource(
+          `fsfile:${this.key}:${fileName}`,
+          () => new FileSystemFileResource(this.handle!, fileName)
+        );
+        fileResource.renderUi();
+        return fileResource.api;
+      },
+    };
   }
 }
 
-export interface FileResource {
-  readonly loaded: boolean;
-  readonly data: ArrayBuffer | null;
-  readonly url: string | null;
-}
-
-export class FileSystemFileResource implements FileResource {
+export class FileSystemFileResource {
   loaded = false;
   private fileHandle?: FileSystemFileHandle;
   private fileData?: ArrayBuffer;
@@ -128,9 +139,6 @@ export class FileSystemFileResource implements FileResource {
     }
     requestRerender();
   }
-  get data(): ArrayBuffer | null {
-    return this.fileData ?? null;
-  }
   renderUi() {
     if (this.error) {
       showError(`Error loading file ${this.fileName}: ${this.error}`);
@@ -138,14 +146,11 @@ export class FileSystemFileResource implements FileResource {
       showInfo(`Loading file: ${this.fileName}`);
     }
   }
-}
-
-class UnloadedFileResource {
-  loaded = false;
-  get data(): null {
-    return null;
-  }
-  get url(): null {
-    return null;
+  get api(): FileResourceApi {
+    return {
+      loaded: this.loaded,
+      data: this.fileData ?? null,
+      url: this.url,
+    };
   }
 }
