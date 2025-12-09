@@ -1,11 +1,5 @@
 import { atom } from "nanostores";
-import type {
-  ControlDef,
-  FrameResult,
-  Graphics,
-  MessageDef,
-  ResourceContext,
-} from "./types";
+import type { ControlDef, FrameResult, Graphics, MessageDef } from "./types";
 
 export class RuntimeController {
   $frame = atom<FrameResult>({
@@ -104,14 +98,11 @@ export class RuntimeController {
     this.messages.push({ key, type, message });
   }
 
-  resource<T>(name: string, factory: (context: ResourceContext) => T): T {
+  resource<T>(name: string, factory: () => T): T {
     const key = this.getCurrentKey(name);
 
     if (!this.resources.has(key)) {
-      const context: ResourceContext = {
-        requestRerender: () => this.requestRerender(),
-      };
-      this.resources.set(key, factory(context));
+      this.resources.set(key, factory());
     }
 
     return this.resources.get(key) as T;

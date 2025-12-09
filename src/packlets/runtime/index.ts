@@ -25,6 +25,5 @@ export type {
   FrameResult,
   Graphics,
   MessageDef,
-  ResourceContext,
   SliderOpts,
 } from "./types";

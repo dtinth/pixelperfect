@@ -1,5 +1,5 @@
 import { RuntimeController } from "./controller";
-import type { ControlDef, Graphics, ResourceContext } from "./types";
+import type { ControlDef, Graphics } from "./types";
 
 // Global runtime instance
 let currentRuntime: RuntimeController | null = null;
@@ -44,10 +44,7 @@ export function getCurrentKey(name: string): string {
   return getRuntime().getCurrentKey(name);
 }
 
-export function resource<T>(
-  name: string,
-  factory: (context: ResourceContext) => T
-): T {
+export function resource<T>(name: string, factory: () => T): T {
   return getRuntime().resource(name, factory);
 }
 

@@ -1,12 +1,11 @@
 import { get, set } from "idb-keyval";
-import { resource } from "./api";
+import { requestRerender, resource } from "./api";
 import { button } from "./controls";
 import { showError, showInfo } from "./messages";
-import type { ResourceContext } from "./types";
 
 export function fileSystem(key: string): FileSystemResource {
-  const fsResource = resource(`fs:${key}`, (ctx: ResourceContext) => {
-    return new FileSystemResource(ctx, key);
+  const fsResource = resource(`fs:${key}`, () => {
+    return new FileSystemResource(key);
   });
   fsResource.renderUi();
   return fsResource;
@@ -20,11 +19,11 @@ export class FileSystemResource {
   private initialized = false;
   private handle?: FileSystemDirectoryHandle;
   private granted = false;
-  constructor(private ctx: ResourceContext, private key: string) {
+  constructor(private key: string) {
     this.init();
   }
   async init() {
-    this.ctx.requestRerender();
+    requestRerender();
     const state = await get<StoredState>(this.key);
     if (state?.handle) {
       this.handle = state.handle;
@@ -34,7 +33,7 @@ export class FileSystemResource {
       this.granted = permission === "granted";
     }
     this.initialized = true;
-    this.ctx.requestRerender();
+    requestRerender();
   }
   renderUi() {
     if (!this.initialized) {
@@ -60,7 +59,7 @@ export class FileSystemResource {
           await set(this.key, { handle });
           this.handle = handle;
           this.granted = permission === "granted";
-          this.ctx.requestRerender();
+          requestRerender();
         } catch (err) {
           console.error(`Unable to select directory`, err);
           alert(`Unable to select directory: ${err}`);
@@ -78,7 +77,7 @@ export class FileSystemResource {
           return;
         }
         this.granted = permission === "granted";
-        this.ctx.requestRerender();
+        requestRerender();
       });
     }
   }
@@ -86,8 +85,8 @@ export class FileSystemResource {
     if (!this.handle || !this.granted) {
       return new UnloadedFileResource();
     }
-    const fileResource = resource(`fsfile:${this.key}:${fileName}`, (ctx) => {
-      return new FileSystemFileResource(ctx, this.handle!, fileName);
+    const fileResource = resource(`fsfile:${this.key}:${fileName}`, () => {
+      return new FileSystemFileResource(this.handle!, fileName);
     });
     fileResource.renderUi();
     return fileResource;
@@ -107,12 +106,11 @@ export class FileSystemFileResource implements FileResource {
   error: string | null = null;
   url: string | null = null;
   constructor(
-    private ctx: ResourceContext,
     private dirHandle: FileSystemDirectoryHandle,
     private fileName: string
   ) {
     this.load();
-    this.ctx.requestRerender();
+    requestRerender();
   }
   async load() {
     try {
@@ -128,7 +126,7 @@ export class FileSystemFileResource implements FileResource {
       this.error = String(err);
       this.loaded = false;
     }
-    this.ctx.requestRerender();
+    requestRerender();
   }
   get data(): ArrayBuffer | null {
     return this.fileData ?? null;

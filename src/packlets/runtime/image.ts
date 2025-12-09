@@ -1,5 +1,4 @@
-import { resource } from "./api";
-import type { ResourceContext } from "./types";
+import { requestRerender, resource } from "./api";
 
 export interface ImageResource {
   readonly loaded: boolean;
@@ -13,18 +12,18 @@ export function image(
   if (!url) {
     return { loaded: false };
   }
-  return resource(`image:${name}`, (context: ResourceContext) => {
+  return resource(`image:${name}`, () => {
     const img = new Image();
     let _loaded = false;
 
     img.onload = () => {
       _loaded = true;
-      context.requestRerender();
+      requestRerender();
     };
 
     img.onerror = () => {
       _loaded = false;
-      context.requestRerender();
+      requestRerender();
     };
 
     img.src = url;

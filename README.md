@@ -66,6 +66,7 @@ if (img.loaded) {
 - **`px.showInfo(message)`** - Display an info message (green).
 - **`px.showError(message)`** - Display an error message (red).
 - **`px.resource(name, factory)`** - Persist objects across frames. Factory runs once.
+- **`px.requestRerender()`** - Request a re-render (useful after async operations or state changes).
 
 These APIs are built on top of `px.resource`:
 
