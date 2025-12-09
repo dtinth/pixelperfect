@@ -12,7 +12,15 @@ const freeTypeRendererResourceMap = new WeakMap<
   FreeTypeRendererResource
 >();
 interface FreeTypeRendererResource {
-  textGraphics(name: string, size: number, text: string): Graphics | null;
+  textGraphics(
+    name: string,
+    size: number,
+    text: string,
+    options?: {
+      lineHeight?: number;
+      letterSpacing?: number;
+    }
+  ): Graphics | null;
 }
 export function freeTypeRenderer(
   source: ArrayBuffer | null
@@ -31,18 +39,38 @@ export function freeTypeRenderer(
   let font: LoadedFont | null = null;
   const sizeCache: Map<number, FontAtSize> = new Map();
   const resource: FreeTypeRendererResource = {
-    textGraphics(name, size, text) {
+    textGraphics(name, size, text, options = {}) {
+      const lineHeight = options.lineHeight ?? size;
+      const letterSpacing = options.letterSpacing ?? 0;
       if (!font) return null;
       let fontAtSize = sizeCache.get(size);
       if (!fontAtSize) {
         fontAtSize = font.withSize(size);
         sizeCache.set(size, fontAtSize);
       }
-      const width = fontAtSize.measure(text, { letterSpacing: 0 });
-      const height = size * 1.2;
+      const lines: {
+        text: string;
+        width: number;
+        y: number;
+        height: number;
+      }[] = [];
+      for (const [i, line] of text.split("\n").entries()) {
+        const lineWidth = fontAtSize.measure(line, { letterSpacing });
+        const lineY = i * lineHeight;
+        lines.push({
+          text: line,
+          width: lineWidth,
+          y: lineY,
+          height: size * 1.2,
+        });
+      }
+      const width = Math.max(...lines.map((l) => l.width));
+      const height = Math.max(...lines.map((l) => l.y + l.height));
       const g = createGraphics(name, Math.ceil(width), Math.ceil(height));
       const { ctx } = g;
-      fontAtSize.draw(ctx, text, 0, size, { letterSpacing: 0 });
+      for (const line of lines) {
+        fontAtSize.draw(ctx, line.text, 0, line.y + size, { letterSpacing });
+      }
       return g;
     },
   };
