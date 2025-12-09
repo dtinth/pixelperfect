@@ -28,21 +28,21 @@ export function render() {
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, out.canvas.width, out.canvas.height);
 
-    // QR code
+    // Asset ID
     if (id) {
       ctx.drawImage(
         id.canvas,
         ~~((out.canvas.width - id.canvas.width) / 2) + 1,
         4
       );
-    } else {
-      out.loading();
-    }
+    } else out.loading();
+
+    // QR code
     ctx.drawImage(qr.canvas, ~~((out.canvas.width - qr.canvas.width) / 2), 22);
+
+    // Footer image
     if (footerImage.loaded) {
       ctx.drawImage(footerImage.image, 0, 132);
-    } else {
-      out.loading();
-    }
+    } else out.loading();
   });
 }

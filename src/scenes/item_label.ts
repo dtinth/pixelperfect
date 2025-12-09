@@ -42,7 +42,8 @@ export function render() {
         titleGraphics.canvas.width * 3,
         titleGraphics.canvas.height * 3
       );
-    }
+    } else g.loading();
+
     if (descriptionGraphics) {
       ctx.drawImage(
         descriptionGraphics.canvas,
@@ -51,6 +52,6 @@ export function render() {
         descriptionGraphics.canvas.width * 2,
         descriptionGraphics.canvas.height * 2
       );
-    }
+    } else g.loading();
   });
 }
