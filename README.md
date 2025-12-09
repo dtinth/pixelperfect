@@ -1,73 +1,99 @@
-# React + TypeScript + Vite
+# PixelPerfect
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A tool for procedurally generating graphics. I primarily use it to generate labels for thermal printers (180dpi, monochrome), but it's general-purpose enough for other kinds of asset generation.
 
-Currently, two official plugins are available:
+It provides:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Canvases with reactive parameters (sliders, text inputs, buttons)
+- Procedural graphics generation via an imperative API (inspired by ImGui)
+- File system access for loading proprietary assets (fonts, images)
+- TrueType font rendering optimized for low-DPI monochrome printing (based on `freetype-wasm`)
+- QR code generation
 
-## React Compiler
+## Quick Example
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+See [`src/scenes/example.ts`](src/scenes/example.ts) for an example. [Preview it live](https://pixel-perfect.pages.dev/).
 
-## Expanding the ESLint configuration
+## Creating a Scene
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Each scene is a TypeScript file in `src/scenes/` that exports a `render()` function:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```typescript
+import * as px from "../packlets/runtime";
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+export function render() {
+  // Imperative code runs here synchronously
+}
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The `render()` function is called whenever a parameter changes (slider, text input, button click) or when async operations complete (image loading, file system access). It runs top-to-bottom, imperatively drawing to canvases.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Parameters and Controls
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Parameters are created on-the-fly as your code calls control functions:
+
+```typescript
+const text = px.textBox("text", "Hello World");
 ```
+
+This registers a text input control and returns the current value. When the user changes the input, `render()` is called again. This time, `textBox()` will returns the updated value, allowing subsequent drawing code to use it.
+
+### Async Operations
+
+Some operations are async (loading files, images, fonts). On first render, they return a "loading" state. Once ready, `render()` is called again.
+
+```typescript
+const img = px.image("logo", "https://example.com/logo.png");
+if (img.loaded) {
+  ctx.drawImage(img.image, 0, 0);
+} else {
+  g.loading();
+}
+```
+
+## API Reference
+
+- **`px.createGraphics(name, width, height)`** &rarr; `g` - Create or retrieve a canvas (same name = same instance (cached)), returns a Graphics object.
+  - `g.ctx` - CanvasRenderingContext2D
+  - `g.canvas` - HTMLCanvasElement
+  - `g.loading()` - Mark graphics as loading (shows loading overlay in UI)
+  - `g.filename` - Set suggested filename for download (e.g., "label.png")
+- **`px.group(name, fn)`** - Namespace controls with dot notation (e.g., "group.size").
+- **`px.slider(name, initialValue, { min?, max?, step? })`** - Range slider, returns current value.
+- **`px.textBox(name, initialValue)`** - Text input, returns current value.
+- **`px.params`** - Access URL query parameters as an object.
+- **`px.button(name, label, onClick)`** - Button that calls a callback when clicked.
+- **`px.showInfo(message)`** - Display an info message (green).
+- **`px.showError(message)`** - Display an error message (red).
+- **`px.resource(name, factory)`** - Persist objects across frames. Factory runs once.
+
+These API
+
+- **`px.image(name, url)`** &rarr; `img` - Load an image asynchronously.
+  - `img.image` - HTMLImageElement
+  - `img.loaded` - Boolean indicating if the image is loaded
+- **`px.fileSystem(key)`** &rarr; `fs` - Access user's file system with permission. Returns a directory handle.
+  - `fs.file(name)` &rarr; `file` - Access a file in the directory.
+    - `file.loaded` - Boolean indicating if the file contents is loaded
+    - `file.data` - ArrayBuffer of file contents
+    - `file.url` - Object URL (for use with `px.image()`)
+- **`px.freeTypeRenderer(fontData)`** &rarr; - Render TrueType fonts optimized for low-DPI monochrome printing. Takes in font data as ArrayBuffer.
+  - **`font.textGraphics(name, size, text, { lineHeight?, letterSpacing? })`** - Generate text as a canvas. Returns a Graphics or `null` if font not loaded yet.
+- **`px.qrGraphics(data, { scale, invert, ecc })`** - Generate a QR code as a canvas. Returns a Graphics.
+
+## Development
+
+```bash
+pnpm install
+pnpm run dev     # Start dev server with HMR
+pnpm run build   # Build for production
+pnpm run lint    # Type-check + ESLint
+```
+
+## Creating a Scene
+
+1. Create `src/scenes/myScene.ts`
+2. Export a `render()` function
+3. Visit `?scene=myScene`
+
+The scene picker and controls panel auto-generate from your code.
