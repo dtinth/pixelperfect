@@ -10,6 +10,8 @@ It provides:
 - TrueType font rendering optimized for low-DPI monochrome printing (based on `freetype-wasm`)
 - QR code generation
 
+![](https://im.dt.in.th/ipfs/bafybeign7gdadmb337jndknozq7z5yynsuadlr3p6x7pcxccrf567kzrw4/image.webp)
+
 ## Quick Example
 
 See [`src/scenes/example.ts`](src/scenes/example.ts) for an example. [Preview it live](https://pixel-perfect.pages.dev/).
