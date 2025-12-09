@@ -4,16 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port ${PORT:-18989}",
+    "preview": "vite preview --port ${PORT:-18989}",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@nanostores/react": "^1.0.0",
+    "freetype-wasm": "^0.0.4",
+    "idb-keyval": "^6.2.2",
     "nanostores": "^1.1.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "uqr": "^0.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -21,6 +24,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/wicg-file-system-access": "^2023.10.7",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
