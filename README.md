@@ -67,18 +67,18 @@ if (img.loaded) {
 - **`px.showError(message)`** - Display an error message (red).
 - **`px.resource(name, factory)`** - Persist objects across frames. Factory runs once.
 
-These API
+These APIs are built on top of `px.resource`:
 
-- **`px.image(name, url)`** &rarr; `img` - Load an image asynchronously.
+- **`px.image(name, url)`** &rarr; `img` - Load an image asynchronously. If `url` is null, you get a placeholder object (`{ loaded: false }`) that is not cached.
   - `img.image` - HTMLImageElement
   - `img.loaded` - Boolean indicating if the image is loaded
-- **`px.fileSystem(key)`** &rarr; `fs` - Access user's file system with permission. Returns a directory handle.
+- **`px.fileSystem(key)`** &rarr; `fs` - Access user's file system. This will render a button to let user pick a directory. Useful for loading proprietary assets that should not be hosted publicly. Until permission is granted, all file accesses return placeholder objects.
   - `fs.file(name)` &rarr; `file` - Access a file in the directory.
     - `file.loaded` - Boolean indicating if the file contents is loaded
     - `file.data` - ArrayBuffer of file contents
     - `file.url` - Object URL (for use with `px.image()`)
-- **`px.freeTypeRenderer(fontData)`** &rarr; - Render TrueType fonts optimized for low-DPI monochrome printing. Takes in font data as ArrayBuffer.
-  - **`font.textGraphics(name, size, text, { lineHeight?, letterSpacing? })`** - Generate text as a canvas. Returns a Graphics or `null` if font not loaded yet.
+- **`px.freeTypeRenderer(fontData)`** &rarr; - Render TrueType fonts optimized for low-DPI monochrome printing. Takes in font data as ArrayBuffer (or null, for placeholder).
+  - **`font.textGraphics(name, size, text, { lineHeight?, letterSpacing? })`** - Generate text as a canvas. Returns a Graphics (or null, if font not loaded yet).
 - **`px.qrGraphics(data, { scale, invert, ecc })`** - Generate a QR code as a canvas. Returns a Graphics.
 
 ## Development
